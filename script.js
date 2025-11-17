@@ -1,10 +1,11 @@
-// script.js — versão estável e sem erros
+// script.js — versão com combo/multiplicador/efeitos
+
 const CONFIG = {
   lanes: ['ArrowLeft','ArrowDown','ArrowUp','ArrowRight'],
-  spawnInterval: 700, // ms
-  speed: 280,          // pixels por segundo
-  hitWindow: 0.25,     // segundos
-  perfectRange: 0.08,  // segundos
+  spawnInterval: 700, 
+  speed: 280,
+  hitWindow: 0.25,
+  perfectRange: 0.08,
 };
 
 const scoreEl = document.getElementById('score');
@@ -15,7 +16,7 @@ const messageEl = document.getElementById('message');
 const laneContainer = document.getElementById('laneContainer');
 
 let arrows = [];
-let lastSpawn = 0;           // em ms (Date.now ou performance.now)
+let lastSpawn = 0;
 let running = false;
 let paused = false;
 let score = 0;
@@ -55,8 +56,8 @@ function spawnArrow(dir){
   const startY = -80;
   const targetY = wrapper.offsetHeight - 120;
   const distance = targetY - startY;
-  const travelTime = distance / CONFIG.speed; // segundos
-  const spawnedAt = performance.now() / 1000;  // segundos
+  const travelTime = distance / CONFIG.speed;
+  const spawnedAt = performance.now() / 1000;
 
   arrows.push({el, dir, spawnedAt, travelTime, startY, targetY, wrapper});
 }
@@ -73,7 +74,7 @@ function update(){
 
   for(let i = arrows.length - 1; i >= 0; i--){
     const a = arrows[i];
-    const elapsed = now - a.spawnedAt; // segundos
+    const elapsed = now - a.spawnedAt;
     const progress = elapsed / a.travelTime;
     const y = a.startY + progress * (a.targetY - a.startY);
     a.el.style.transform = `translateY(${y}px)`;
@@ -100,26 +101,58 @@ function handleKey(e){
   for(let i = 0; i < arrows.length; i++){
     const a = arrows[i];
     if(a.dir !== key) continue;
-    const delta = Math.abs(a.travelTime - (now - a.spawnedAt)); // segundos até o alvo (aprox)
-    if(delta < bestDelta){ bestDelta = delta; bestIndex = i; }
+
+    const delta = Math.abs(a.travelTime - (now - a.spawnedAt));
+
+    if(delta < bestDelta){
+      bestDelta = delta;
+      bestIndex = i;
+    }
   }
 
-  if(bestIndex === -1) return; // não há arrow correspondente
+  if(bestIndex === -1) return;
 
-  const delta = bestDelta;
   const a = arrows[bestIndex];
+  const delta = bestDelta;
 
   if(delta <= CONFIG.hitWindow){
-    if(delta <= CONFIG.perfectRange){ score += 300; messageEl.textContent = 'PERFEITO'; }
-    else if(delta <= CONFIG.hitWindow/2){ score += 150; messageEl.textContent = 'BOM'; }
-    else { score += 50; messageEl.textContent = 'OK'; }
+
+    // ============ SISTEMA DE PONTOS COM MULTIPLICADOR ============
+
+    let base = 0;
+
+    if(delta <= CONFIG.perfectRange){
+      base = 300;
+      messageEl.textContent = 'PERFEITO';
+    }
+    else if(delta <= CONFIG.hitWindow / 2){
+      base = 150;
+      messageEl.textContent = 'BOM';
+    }
+    else {
+      base = 50;
+      messageEl.textContent = 'OK';
+    }
+
+    // bonus do combo: +10% por combo até x3 máximo
+    const comboBonus = Math.min(combo * 0.10, 3);
+    const finalScore = Math.floor(base * (1 + comboBonus));
+    score += finalScore;
+
+    // efeito visual de combo
+    comboEl.classList.add("comboFlash");
+    setTimeout(() => comboEl.classList.remove("comboFlash"), 250);
+
+    // =============================================================
 
     combo++;
     a.el.classList.add('hit');
     a.el.remove();
     arrows.splice(bestIndex,1);
     updateHUD();
+
     setTimeout(()=> messageEl.textContent = '', 400);
+
   } else {
     combo = 0;
     updateHUD();
