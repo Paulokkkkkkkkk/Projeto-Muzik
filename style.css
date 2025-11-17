@@ -1,0 +1,16 @@
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+body{display:flex;min-height:100vh;align-items:center;justify-content:center;background:#111;color:#eee}
+#game{width:760px;background:#1b1b1b;padding:16px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+h1{font-size:18px}
+.hud{display:flex;gap:12px}
+#playfield{position:relative;height:480px;background:linear-gradient(#232323,#171717);border-radius:8px;overflow:hidden}
+#targets{position:absolute;left:50%;transform:translateX(-50%);bottom:28px;display:flex;gap:18px}
+.target{width:72px;height:72px;border:2px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:36px;border-radius:6px;backdrop-filter: blur(4px)}
+#laneContainer{position:absolute;left:50%;transform:translateX(-50%);top:0;width:360px;height:100%;pointer-events:none}
+.lane{position:absolute;left:0;right:0;height:0;display:flex;justify-content:space-between;padding:0 6px}
+.arrow{position:absolute;width:72px;height:72px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:32px;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.06);transform:translateY(-100%)}
+.arrow.hit{filter:brightness(1.8);}
+#message{display:inline-block;margin-left:12px}
+button{padding:8px 12px;border-radius:8px;background:#2b2b2b;border:1px solid #333;color:#fff;cursor:pointer}
+button:active{transform:translateY(1px)}
