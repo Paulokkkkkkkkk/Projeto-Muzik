@@ -1,58 +1,43 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Jogo de Setinhas</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto Muzik</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div id="gameOverModal" style="display: none;"> 
-    <div id="gameOverScreen">
-        <h2>FIM DE JOGO!</h2>
-        <p>Pontuação Máxima Alcançada:</p>
-        <p id="finalScore" class="final-score">0</p>
-        <button id="restartBtn">Tentar Novamente</button>
-    </div>
+<div class="gameBox">
+
+    <div class="top">
+        <h1>Projeto Muzik</h1>
+        <div class="hud">
+            <span id="score">Pontos: 0</span>
+            <span id="combo">Combo: 0</span>
+        </div>
+    </div>
+
+    <div id="gameArea">
+        <div class="lane" data-lane="0"><div class="laneInner"></div></div>
+        <div class="lane" data-lane="1"><div class="laneInner"></div></div>
+        <div class="lane" data-lane="2"><div class="laneInner"></div></div>
+        <div class="lane" data-lane="3"><div class="laneInner"></div></div>
+    </div>
+
+    <div id="targets">
+        <div class="target" data-dir="ArrowLeft">◀</div>
+        <div class="target" data-dir="ArrowDown">▼</div>
+        <div class="target" data-dir="ArrowUp">▲</div>
+        <div class="target" data-dir="ArrowRight">▶</div>
+    </div>
+
+    <button id="startBtn">Iniciar</button>
+    
+    <audio id="music" src="Aura.mp3"></audio>
+
 </div>
 
-<main id="game">
-    <header>
-        <h1>Projeto Muzik</h1>
-        <div class="hud">
-            <div id="score">Pontos: 0</div>
-            <div id="combo">Combo: 0</div>
-        </div>
-    </header>
-
-    <section id="playfield">
-        <div id="targets">
-            <div class="target" data-dir="ArrowLeft">◀</div>
-            <div class="target" data-dir="ArrowDown">▼</div>
-            <div class="target" data-dir="ArrowUp">▲</div>
-            <div class="target" data-dir="ArrowRight">▶</div>
-        </div>
-
-        <div id="laneContainer">
-            <div class="lane" data-lane-index="0"></div>
-            <div class="lane" data-lane-index="1"></div>
-            <div class="lane" data-lane-index="2"></div>
-            <div class="lane" data-lane-index="3"></div>
-        </div>
-    </section>
-
-    <footer>
-        <button id="startBtn">Iniciar</button>
-        <button id="pauseBtn">Pausar</button>
-        <div id="message"></div> 
-    </footer>
-</main>
-
-<audio id="music" src="Aura.mp3" preload="auto"></audio>
-
-<script src="chart.js"></script>
 <script src="script.js"></script>
-
 </body>
 </html>
