@@ -9,42 +9,47 @@
 <body>
 
 <div id="gameOverModal" style="display: none;"> 
-    <div id="gameOverScreen">
-        <h2>FIM DE JOGO!</h2>
-        <p>Pontuação Máxima Alcançada:</p>
-        <p id="finalScore" class="final-score">0</p>
-        <button id="restartBtn">Tentar Novamente</button>
-    </div>
+    <div id="gameOverScreen">
+        <h2>FIM DE JOGO!</h2>
+        <p>Pontuação Máxima Alcançada:</p>
+        <p id="finalScore" class="final-score">0</p>
+        <button id="restartBtn">Tentar Novamente</button>
+    </div>
 </div>
 
 <main id="game">
-    <header>
-        <h1>Projeto Muzik</h1>
-        <div class="hud">
-            <div id="score">Pontos: 0</div>
-            <div id="combo">Combo: 0</div>
+    <header>
+        <h1>Projeto Muzik</h1>
+        <div class="hud">
+            <div id="score">Pontos: 0</div>
+            <div id="combo">Combo: 0</div>
+        </div>
+    </header>
+
+    <section id="playfield">
+        <div id="targets">
+            <div class="target" data-dir="ArrowLeft">◀</div>
+            <div class="target" data-dir="ArrowDown">▼</div>
+            <div class="target" data-dir="ArrowUp">▲</div>
+            <div class="target" data-dir="ArrowRight">▶</div>
+        </div>
+
+        <div id="laneContainer">
+            <div class="lane" data-lane-index="0"></div>
+            <div class="lane" data-lane-index="1"></div>
+            <div class="lane" data-lane-index="2"></div>
+            <div class="lane" data-lane-index="3"></div>
         </div>
-    </header>
+    </section>
 
-    <section id="playfield">
-        <div id="targets">
-            <div class="target" data-dir="ArrowLeft">◀</div>
-            <div class="target" data-dir="ArrowDown">▼</div>
-            <div class="target" data-dir="ArrowUp">▲</div>
-            <div class="target" data-dir="ArrowRight">▶</div>
-        </div>
-
-        <div id="laneContainer"></div>
-    </section>
-
-    <footer>
-        <button id="startBtn">Iniciar</button>
-        <button id="pauseBtn">Pausar</button>
-        <div id="message"></div> 
-    </footer>
+    <footer>
+        <button id="startBtn">Iniciar</button>
+        <button id="pauseBtn">Pausar</button>
+        <div id="message"></div> 
+    </footer>
 </main>
 
-<audio id="gameAudio" src="Aura.mp3" preload="auto"></audio>
+<audio id="music" src="Aura.mp3" preload="auto"></audio>
 
 <script src="chart.js"></script>
 <script src="script.js"></script>

@@ -1,498 +1,185 @@
-// script.js — Versão Final com Charting (Sincronia com a música) e Correções de Combo
-
-const CONFIG = {
-    lanes: ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'],
-    speed: 280, // Velocidade de queda (em pixels/segundo)
-    hitWindow: 0.25, // Janela de acerto (em segundos)
-    perfectRange: 0.08, // Margem de acerto perfeito (em segundos)
-    longNoteTickScore: 20 // Pontos ganhos por "tick" ao segurar
+// ==============================
+// CONFIGURAÇÕES
+// ==============================
+const lanes = {
+    "ArrowLeft": 0,
+    "ArrowDown": 1,
+    "ArrowUp": 2,
+    "ArrowRight": 3
 };
 
-// Variáveis que serão referenciadas globalmente, mas inicializadas dentro de DOMContentLoaded
-let scoreEl, comboEl, startBtn, pauseBtn, messageEl, laneContainer, audioEl;
-let gameOverModal, gameOverScreen, finalScoreEl, restartBtn;
+// Mapeamento de nomes de setas para os símbolos visuais
+const arrowSymbols = {
+    "ArrowLeft": "◀",
+    "ArrowDown": "▼",
+    "ArrowUp": "▲",
+    "ArrowRight": "▶"
+};
 
-let arrows = [];
-let running = false;
-let paused = false;
-let score = 0;
-let combo = 0;
-let startTime = 0;
-let lastUpdate = performance.now();
+// Velocidade de descida das notas (px/s)
+const NOTE_SPEED = 400;
 
-// Controle de Chart (Novo)
-let currentChart = (typeof AURA_CHART !== 'undefined') ? AURA_CHART : [];
-let nextNoteIndex = 0; // O índice da próxima nota a ser spawnada no chart
-let travelTime = 0; // Tempo que a seta leva para ir do topo ao alvo
+// Posição de acerto (do topo da área de jogo até o target)
+// Seu playfield tem 480px, targets estão em bottom: 40px. 480 - 40 = 440px. 
+// Usaremos 440px como a linha de acerto.
+const HIT_POSITION_PX = 440; 
 
-let penaltyModeActive = false; 
-let maxScoreThisRun = 0; 
-let keysHeld = {};
+// Tolerância de timing
+const HIT_WINDOW = 0.160;
 
-// ======================== FUNÇÕES DE INICIALIZAÇÃO E SETUP ========================
+// Tempo que a nota leva para descer (1.5s = 440px / 400px/s)
+// 440 / 400 = 1.1s. Vamos usar 1.1s para precisão.
+const TIME_TO_DROP = HIT_POSITION_PX / NOTE_SPEED; 
 
-function buildLanes() {
-    if (!laneContainer) return; 
-    laneContainer.innerHTML = '';
-    const lane = document.createElement('div');
-    lane.className = 'lane';
-    CONFIG.lanes.forEach(d => {
-        const wrapper = document.createElement('div');
-        wrapper.style.width = '72px';
-        wrapper.style.height = '100%';
-        wrapper.style.position = 'relative';
-        wrapper.dataset.dir = d;
-        lane.appendChild(wrapper);
-    });
-    laneContainer.appendChild(lane);
 
-    // Calcular o tempo de viagem da seta UMA VEZ
-    // (Altura do playfield - posição do alvo) / Velocidade
-    const targetY = laneContainer.offsetHeight - 120;
-    const startY = -80;
-    const distance = targetY - startY;
-    travelTime = distance / CONFIG.speed;
-}
+// ==============================
+// ELEMENTOS DOM
+// ==============================
+const laneElems = document.querySelectorAll(".lane"); 
+const audio = document.getElementById("music"); 
+const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
 
-function arrowSymbol(dir) {
-    return { ArrowLeft: '◀', ArrowDown: '▼', ArrowUp: '▲', ArrowRight: '▶' }[dir] || '?';
-}
+// Chart vindo de window.currentChart
+let chart = window.currentChart || [];
 
-/**
- * Cria uma seta baseada nos dados do Chart, ajustando o tempo de spawn.
- * @param {string} dir Direção da seta.
- * @param {number} duration Duração da Long Note (0 para nota curta).
- * @param {number} noteTime Tempo ideal de acerto (sincronizado com a música).
- */
-function spawnChartArrow(dir, duration, noteTime) {
-    const wrappers = [...document.querySelectorAll('.lane > div')];
-    const wrapper = wrappers[CONFIG.lanes.indexOf(dir)];
-    if (!wrapper) return;
+// ==============================
+// SPAWN DE NOTAS
+// ==============================
+function spawnNote(obj) {
+    let laneIndex = lanes[obj.dir];
+    if (laneIndex === undefined) return;
 
-    const isLongNote = duration > 0;
+    let note = document.createElement("div");
+    note.classList.add("note");
+    note.dataset.time = obj.time;
+    note.dataset.dir = obj.dir;
     
-    // 1. Cria o elemento principal/cabeça
-    const headEl = document.createElement('div');
-    headEl.className = 'arrow' + (isLongNote ? ' long-head' : '');
-    headEl.textContent = arrowSymbol(dir);
-    wrapper.appendChild(headEl);
+    // Adiciona o símbolo da seta como conteúdo
+    note.textContent = arrowSymbols[obj.dir] || ''; 
 
-    const startY = -80;
-    const targetY = wrapper.offsetHeight - 120;
-    
-    // O tempo em que a seta deve começar a cair para chegar no noteTime (tempo ideal)
-    const idealSpawnTimeMs = (noteTime - travelTime) * 1000;
-    const spawnedAt = (idealSpawnTimeMs + startTime) / 1000; // Tempo real de spawn (em segundos)
+    // Long note
+    if (obj.duration > 0) {
+        note.classList.add("long");
+        note.dataset.duration = obj.duration;
 
-    let newArrow = {
-        el: headEl,
-        dir,
-        spawnedAt,
-        travelTime,
-        startY,
-        targetY,
-        wrapper,
-        isLongNote,
-        duration,
-        bodyEl: null,
-        held: false,
-        hitTime: 0
-    };
+        let tail = document.createElement("div");
+        tail.classList.add("long-tail");
+        note.appendChild(tail);
+    }
 
-    // 2. Se for longa, cria o corpo
-    if (isLongNote) {
-        const bodyEl = document.createElement('div');
-        bodyEl.className = 'long-body';
-        wrapper.appendChild(bodyEl);
-        newArrow.bodyEl = bodyEl;
-    }
-
-    arrows.push(newArrow);
+    laneElems[laneIndex].appendChild(note);
 }
 
-
-// ======================== LÓGICA DO JOGO E HUD ========================
-
-function updateHUD() {
-    scoreEl.textContent = `Pontos: ${Math.floor(score)}`;
-    comboEl.textContent = `Combo: ${combo}`;
-    if (score > maxScoreThisRun) {
-        maxScoreThisRun = score;
-    }
-}
-
-function checkGameOver() {
-    if (score <= 0) {
-        score = 0; 
-        updateHUD();
-
-        running = false;
-        paused = true; 
-
-        if (finalScoreEl && gameOverModal) {
-            finalScoreEl.textContent = Math.floor(maxScoreThisRun);
-            gameOverModal.style.display = 'flex'; 
-        }
-        
-        arrows.forEach(a => {
-            a.el.remove();
-            if (a.bodyEl) a.bodyEl.remove();
-        });
-        arrows = [];
-        
-        messageEl.textContent = '';
-        startBtn.textContent = 'Reiniciar';
-        pauseBtn.textContent = 'Pausar';
-
-        if (audioEl) {
-            audioEl.pause();
-        }
-    }
-}
-
-function applyPenalty(type) {
-    combo = 0; 
-    let displayMessage = type;
-    
-    if (score > 2000) {
-        penaltyModeActive = true;
-    }
-    
-    if (penaltyModeActive) {
-        score -= 1000;
-        displayMessage += ' (-1000)';
-        
-        scoreEl.classList.add("scoreMiss");
-        setTimeout(() => scoreEl.classList.remove("scoreMiss"), 250);
-    } 
-
-    messageEl.textContent = displayMessage;
-    setTimeout(() => messageEl.textContent = '', 400);
-
-    updateHUD();
-    checkGameOver();
-}
-
-function update(nowMs) {
-    if (!running || paused) {
-        lastUpdate = nowMs;
-        return;
-    }
-    
-    const now = nowMs / 1000;
-    const deltaTime = (nowMs - lastUpdate) / 1000;
-    lastUpdate = nowMs;
-
-    // ================= LÓGICA DE SPAWN BASEADA EM CHART (NOVO) =================
-    const songTime = (nowMs - startTime) / 1000; 
-
-    while (nextNoteIndex < currentChart.length) {
-        const note = currentChart[nextNoteIndex];
-        
-        // Se o tempo de spawn ideal da próxima nota já passou
-        if (songTime >= (note.time - travelTime)) {
-            if (note.dir === 'END') {
-                running = false; // Fim da música
-                break;
-            }
-            
-            // Spawn da seta com os dados do chart
-            spawnChartArrow(note.dir, note.duration, note.time);
-            nextNoteIndex++;
-        } else {
-            // A próxima nota ainda está muito longe
-            break;
-        }
-    }
-    // ================= FIM DA LÓGICA DE SPAWN =================
-
-    for (let i = arrows.length - 1; i >= 0; i--) {
-        const a = arrows[i];
-        const elapsed = now - a.spawnedAt;
-        const progress = elapsed / a.travelTime;
-        const y = a.startY + progress * (a.targetY - a.startY);
-
-        // Lógica de Movimento
-        if (!a.isLongNote || a.hitTime === 0) {
-            a.el.style.transform = `translateY(${y}px)`;
-        } else {
-            // Lógica de Long Note (Body e Head)
-            const heldElapsed = now - a.hitTime;
-            const bodyHeight = (a.duration - heldElapsed) * CONFIG.speed;
-            
-            a.bodyEl.style.height = `${Math.max(0, bodyHeight)}px`;
-            a.bodyEl.style.transform = `translateY(${a.el.offsetTop + a.el.offsetHeight / 2 - a.bodyEl.offsetHeight / 2}px)`;
-            a.el.style.transform = `translateY(${a.targetY}px)`;
-            
-            // Pontuação Contínua (Tick Score)
-            if (a.held && heldElapsed < a.duration) {
-                score += CONFIG.longNoteTickScore * deltaTime * 10;
-                updateHUD(); 
-            }
-        }
-
-        // Lógica de MISS (Erros de setas que passam)
-        if (progress >= 1.18) {
-            if (!a.isLongNote || a.hitTime === 0) {
-                a.el.remove();
-                if (a.isLongNote) a.bodyEl.remove();
-                arrows.splice(i, 1);
-                
-                applyPenalty('MISS'); 
-                continue;
-            }
-        }
-
-        // Fim da Long Note
-        if (a.isLongNote && a.hitTime > 0 && (now - a.hitTime) >= a.duration) {
-            a.el.remove();
-            a.bodyEl.remove();
-            arrows.splice(i, 1);
-            a.held = false;
-            continue;
-        }
-    }
-
-    // Lógica de penalidade por soltar Long Note cedo
-    for (let i = 0; i < arrows.length; i++) {
-        const a = arrows[i];
-        if (a.isLongNote && a.held && !keysHeld[a.dir]) {
-            applyPenalty('EARLY RELEASE'); 
-            
-            a.held = false;
-            a.el.remove();
-            a.bodyEl.remove();
-            arrows.splice(i, 1);
-            
-            break; 
-        }
-    }
-
-    requestAnimationFrame(update);
-}
-
-
-// ======================== FUNÇÕES DE EVENTOS DE TECLADO ========================
-
-function handleKeyDown(e) {
-    if (!running || paused || keysHeld[e.key]) return;
-
-    const key = e.key;
-    keysHeld[key] = true;
-    const now = performance.now() / 1000;
-
-    let bestIndex = -1;
-    let bestDelta = Infinity;
-
-    for (let i = 0; i < arrows.length; i++) {
-        const a = arrows[i];
-        if (a.dir !== key || a.hitTime > 0) continue;
-
-        const elapsed = now - a.spawnedAt;
-        const progress = elapsed / a.travelTime;
-        
-        if (progress < 1 - (CONFIG.hitWindow * 2)) continue;
-
-        const delta = Math.abs(a.travelTime - elapsed);
-
-        if (delta < bestDelta) {
-            bestDelta = delta;
-            bestIndex = i;
-        }
-    }
-
-    if (bestIndex === -1) {
-        // CORRIGIDO: Não penaliza cliques vazios, o combo só é quebrado por MISS ou ERRO TARDE.
+// ==============================
+// UPDATE DO JOGO (GAME LOOP)
+// ==============================
+function update() {
+    if (audio.paused) {
         return; 
     }
+    
+    let t = audio.currentTime;
 
-    const a = arrows[bestIndex];
-    const delta = bestDelta;
+    // Spawn notas na hora certa. Spawnar a nota no topo 1.1s antes do acerto.
+    chart.forEach(obj => {
+        if (!obj.spawned && t >= obj.time - TIME_TO_DROP) {
+            spawnNote(obj);
+            obj.spawned = true;
+        }
+    });
 
-    if (delta <= CONFIG.hitWindow) {
-        // ============ ACERTO (HEAD HIT) ============
+    // Atualizar movimento das notas
+    document.querySelectorAll(".note").forEach(note => {
+        let time = parseFloat(note.dataset.time);
+        let delta = t - time;
         
-        let base = 0;
-        let message = '';
-
-        if (delta <= CONFIG.perfectRange) {
-            base = 300;
-            message = 'PERFEITO';
-        } else if (delta <= CONFIG.hitWindow / 2) {
-            base = 150;
-            message = 'BOM';
-        } else {
-            base = 50;
-            message = 'OK';
-        }
-
-        const comboBonus = Math.min(combo * 0.10, 3);
-        const finalScore = Math.floor(base * (1 + comboBonus));
-        score += finalScore;
-
-        comboEl.classList.add("comboFlash");
-        setTimeout(() => comboEl.classList.remove("comboFlash"), 250);
-
-        combo++;
-        updateHUD();
+        // CÁLCULO CORRIGIDO:
+        // Posição no eixo Y = Posição de Acerto - Distância que falta para percorrer
+        let y = HIT_POSITION_PX - ( (time - t) * NOTE_SPEED);
         
-        if (!a.isLongNote) {
-            // Seta CURTA
-            a.el.classList.add('hit');
-            a.el.remove();
-            arrows.splice(bestIndex, 1);
-            messageEl.textContent = message;
-            setTimeout(() => messageEl.textContent = '', 400);
-        } else {
-            // Cabeça de Seta LONGA
-            a.hitTime = now;
-            a.held = true;
-            a.el.classList.add('held-head');
-            messageEl.textContent = `${message} (HOLD)`;
-        }
-    } else {
-        // Penalidade por ERRO MUITO TARDE
-        applyPenalty('ERRO'); 
-    }
+        note.style.top = `${y}px`;
+
+        // Long notes crescendo
+        if (note.classList.contains("long")) {
+            let dur = parseFloat(note.dataset.duration);
+            let tail = note.querySelector(".long-tail");
+
+            let grow = Math.max(0, Math.min(1, delta / dur));
+            // A altura da cauda é relativa ao corpo da nota (72px)
+            tail.style.height = `${grow * (HIT_POSITION_PX - 72)}px`; // Altura máxima da pista - altura da nota
+        }
+
+        // Remover notas muito atrasadas (Abaixo da tela)
+        if (y > 550) note.remove();
+    });
+
+    requestAnimationFrame(update);
 }
 
-function handleKeyUp(e) {
-    const key = e.key;
-    keysHeld[key] = false;
-    
-    for (let i = 0; i < arrows.length; i++) {
-        const a = arrows[i];
-        if (a.isLongNote && a.dir === key && a.held) {
-            const now = performance.now() / 1000;
-            const heldDuration = now - a.hitTime;
-            
-            if (heldDuration < a.duration - 0.1) {
-                // Soltou cedo - a penalidade e remoção serão tratadas no loop de update
-            } else {
-                a.held = false;
-            }
-        }
-    }
-}
+// ==============================
+// INPUT DO JOGADOR
+// ==============================
+window.addEventListener("keydown", e => {
+    if (!lanes.hasOwnProperty(e.key) || audio.paused) return;
 
+    let lane = lanes[e.key];
+    let notes = laneElems[lane].querySelectorAll(".note");
 
-// ======================== FUNÇÕES DE CONTROLE ========================
+    let t = audio.currentTime;
 
-function startGame() {
-    running = true;
-    paused = false;
-    score = 0; 
-    combo = 0;
-    maxScoreThisRun = 0; 
-    penaltyModeActive = false; 
-    keysHeld = {};
-    
-    // Resetar o Chart
-    nextNoteIndex = 0; 
+    let best = null;
+    let bestOffset = 999;
 
-    arrows.forEach(a => {
-        a.el.remove();
-        if (a.bodyEl) a.bodyEl.remove();
-    });
-    arrows = [];
-    updateHUD();
-    
-    startTime = performance.now(); // Marca o início do jogo (e da música)
-    startBtn.textContent = 'Reiniciar';
-    messageEl.textContent = '';
-    
-    if (gameOverModal) {
-        gameOverModal.style.display = 'none'; 
-    }
+    notes.forEach(note => {
+        let nTime = parseFloat(note.dataset.time);
+        let diff = Math.abs(t - nTime);
 
-    if (audioEl) {
-        audioEl.currentTime = 0; // Volta a música para o início
-        audioEl.play().catch(error => {
-            console.warn("Áudio não pôde iniciar sem interação do usuário. Clique em Iniciar.");
-        }); 
-    }
-    
-    requestAnimationFrame(update);
-}
+        if (diff < bestOffset) {
+            best = note;
+            bestOffset = diff;
+        }
+    });
 
-function reset() {
-    running = false;
-    keysHeld = {};
-    nextNoteIndex = 0; 
-
-    arrows.forEach(a => {
-        a.el.remove();
-        if (a.bodyEl) a.bodyEl.remove();
-    });
-    arrows = [];
-    score = 0;
-    combo = 0;
-    maxScoreThisRun = 0; 
-    penaltyModeActive = false;
-    updateHUD();
-    messageEl.textContent = '';
-    startBtn.textContent = 'Iniciar';
-    
-    if (gameOverModal) {
-        gameOverModal.style.display = 'none'; 
-    }
-
-    if (audioEl) {
-        audioEl.pause();
-        audioEl.currentTime = 0; 
-    }
-}
-
-
-// ======================== INICIALIZAÇÃO SEGURA ========================
-
-document.addEventListener('DOMContentLoaded', () => {
-    // ============ REFERÊNCIAS DO HUD E CONTROLES ============
-    scoreEl = document.getElementById('score');
-    comboEl = document.getElementById('combo');
-    startBtn = document.getElementById('startBtn');
-    pauseBtn = document.getElementById('pauseBtn');
-    messageEl = document.getElementById('message');
-    laneContainer = document.getElementById('laneContainer');
-    audioEl = document.getElementById('gameAudio'); // NOVA REFERÊNCIA
-    
-    // ============ REFERÊNCIAS DO POP-UP MODAL ============
-    gameOverModal = document.getElementById('gameOverModal'); 
-    gameOverScreen = document.getElementById('gameOverScreen'); 
-    finalScoreEl = document.getElementById('finalScore');
-    restartBtn = document.getElementById('restartBtn');
-    
-    if (!scoreEl || !comboEl || !startBtn || !laneContainer || !pauseBtn) {
-        console.error("Erro: Elementos essenciais do jogo não foram encontrados. Verifique seu index.html.");
-        return; 
-    }
-
-    buildLanes();
-
-    // ======================== LISTENERS ========================
-    startBtn.addEventListener('click', () => {
-        if (running) reset();
-        startGame();
-    });
-
-    pauseBtn.addEventListener('click', () => {
-        paused = !paused;
-        pauseBtn.textContent = paused ? 'Retomar' : 'Pausar';
-
-        if (audioEl) {
-            paused ? audioEl.pause() : audioEl.play(); // Controle de áudio
-        }
-
-        if (!paused) {
-            lastUpdate = performance.now();
-            requestAnimationFrame(update);
-        }
-    });
-
-    if (restartBtn) {
-        restartBtn.addEventListener('click', startGame);
-    }
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    if (best && bestOffset <= HIT_WINDOW) {
+        best.remove();
+    }
 });
+
+// ==============================
+// CONTROLE DO JOGO (Iniciar/Pausar)
+// ==============================
+
+// Função para iniciar o jogo (agora ASYNC para tratar a Promise do play)
+async function startGame() { 
+    audio.currentTime = 0; 
+    
+    try {
+        await audio.play(); 
+        
+        startBtn.style.display = 'none'; 
+        pauseBtn.style.display = 'inline-block';
+        
+    } catch (error) {
+        console.error("Erro ao tentar tocar o áudio:", error);
+        alert("O navegador bloqueou o início automático. Clique em OK e tente novamente.");
+        startBtn.style.display = 'inline-block';
+        pauseBtn.style.display = 'none';
+    }
+}
+
+// Ouve o clique no botão Iniciar
+startBtn.addEventListener("click", startGame);
+
+// Ouve o clique no botão Pausar
+pauseBtn.addEventListener("click", () => {
+    audio.pause();
+    startBtn.style.display = 'inline-block';
+    pauseBtn.style.display = 'none';
+});
+
+
+// INICIAR LOOP: Este evento é disparado assim que 'audio.play()' é chamado.
+audio.onplay = () => {
+    requestAnimationFrame(update);
+};
