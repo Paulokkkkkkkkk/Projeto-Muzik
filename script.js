@@ -21,7 +21,7 @@ const PERFECT = 0.08;
 const GOOD = 0.16;
 const HOLD_TICK_POINTS = 25; 
 const HOLD_TICK_INTERVAL = 100; 
-const PENALTY_THRESHOLD = 2000; // Pontuação mínima para começar a perder pontos
+const PENALTY_THRESHOLD = 2000; // Pontuação mínima para DESBLOQUEAR a penalidade
 const PENALTY_AMOUNT = 400;     // Valor da penalidade de miss (400 pontos)
 
 const audio = document.getElementById("music");
@@ -38,6 +38,7 @@ let gameRunning = false;
 let raf;
 
 let highScore = 0; 
+let penaltyUnlocked = false; // NOVO: Estado para rastrear se a penalidade foi desbloqueada
 
 const holdingNotes = new Map(); 
 
@@ -163,7 +164,7 @@ function spawnNote(n) {
     el.dataset.dir = n.dir;
     el.dataset.duration = n.duration;
     el.dataset.held = "false"; 
-    el.dataset.missed = "false"; // FLAG CRÍTICA: Rastreia se a nota já acionou o miss
+    el.dataset.missed = "false"; 
 
     if (n.duration > 0) {
         const tail = document.createElement("div");
@@ -204,6 +205,11 @@ function scoreHold(dir, noteEl) {
     
     highScore = Math.max(highScore, score); 
     
+    // NOVO: Desbloqueia a penalidade se o score atingir o limite
+    if (score >= PENALTY_THRESHOLD) {
+        penaltyUnlocked = true;
+    }
+    
     updateHUD();
 
     showHoldFeedback(dir);
@@ -236,7 +242,6 @@ function update() {
         const duration = parseFloat(note.dataset.duration);
         const y = HIT_Y - ((tNote - t) * NOTE_SPEED);
         
-        // CRÍTICO: Rastreia se a nota já foi processada como miss
         const alreadyMissed = note.dataset.missed === 'true'; 
 
         note.style.top = y + "px";
@@ -249,7 +254,7 @@ function update() {
 
             // Se é uma nota longa E ela passou da linha final E não foi acertada E NÃO FOI MARCADA COMO MISS
             if (y > HIT_Y + 120 && note.dataset.held === "false" && !alreadyMissed) {
-                note.dataset.missed = 'true'; // Marca como processada
+                note.dataset.missed = 'true'; 
                 note.remove(); 
                 registerMiss();
             }
@@ -257,7 +262,7 @@ function update() {
         
         // Miss para notas simples (duração 0) E NÃO FOI MARCADA COMO MISS
         else if (duration === 0 && y > HIT_Y + 120 && !alreadyMissed) {
-            note.dataset.missed = 'true'; // Marca como processada
+            note.dataset.missed = 'true'; 
             note.remove(); 
             registerMiss();
         }
@@ -295,6 +300,11 @@ function registerHit(note, offset) {
 
     score += gain;
     
+    // NOVO: Desbloqueia a penalidade se o score atingir o limite
+    if (score >= PENALTY_THRESHOLD) {
+        penaltyUnlocked = true;
+    }
+    
     highScore = Math.max(highScore, score); 
     
     updateHUD();
@@ -304,11 +314,11 @@ function registerHit(note, offset) {
 function registerMiss() {
     combo = 0;
     
-    // LÓGICA DE PENALIDADE: Perda de 400 pontos só ocorre se score >= 2000
-    if (score >= PENALTY_THRESHOLD) {
+    // LÓGICA CORRIGIDA: Perda de 400 pontos ocorre SE A PENALIDADE JÁ ESTIVER DESBLOQUEADA
+    if (penaltyUnlocked) {
         score -= PENALTY_AMOUNT; 
     } 
-    // Se score < 2000, o score não é alterado (apenas o combo zera).
+    // Se a penalidade não foi desbloqueada (score < 2000), o score permanece inalterado.
     
     updateHUD(); 
 
@@ -495,6 +505,7 @@ function resetGame() {
     score = 0;
     combo = 0;
     maxCombo = 0;
+    penaltyUnlocked = false; // NOVO: Reinicia o estado de penalidade
     
     if (audio && !audio.error) {
         audio.currentTime = 0;
