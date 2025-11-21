@@ -15,7 +15,7 @@ const symbols = {
     ArrowRight: "▶"
 };
 
-const NOTE_SPEED = 420;   // px/sec
+const NOTE_SPEED = 480;   // px/sec
 const HIT_Y = 460;        
 const PERFECT = 0.08;
 const GOOD = 0.16;
@@ -50,8 +50,6 @@ const holdingNotes = new Map();
 //  CHART: 'aura - ogryzek' (Nível Intermediário/Avançado)
 // -------------------------------------------------------------
 const chart = [
-{ time: 0.20, lane: 1, hold: 2.0 },
-{ time: 0.50, lane: 2, hold: 1.6 },
 { time: 3.00, lane: 0, hold: 0 },
 { time: 3.50, lane: 2, hold: 0 },
 { time: 4.00, lane: 1, hold: 0 },
@@ -86,8 +84,8 @@ const chart = [
 { time: 17.00, lane: 2, hold: 0 },
 { time: 17.50, lane: 3, hold: 0 },
 { time: 18.00, lane: 0, hold: 0 },
-{ time: 19.00, lane: 1, hold: 1.0 },
-{ time: 20.50, lane: 2, hold: 0.8 },
+{ time: 19.00, lane: 1, hold: 0 },
+{ time: 20.50, lane: 2, hold: 0 },
 { time: 23.00, lane: 3, hold: 0 },
 { time: 23.50, lane: 3, hold: 0 },
 { time: 24.00, lane: 3, hold: 0 },
