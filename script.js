@@ -53,11 +53,11 @@ const holdingNotes = new Map();
 // -------------------------------------------------------------
 //  MÚSICAS E CHARTS
 // -------------------------------------------------------------
+
 const SONGS = {
     "Aura - Ogryzek": {
         src: "Aura.mp3",
         chart: [
-            // Seu chart original 'Aura' (aproximadamente 111 segundos)
             { time: 3.00, lane: 0, hold: 0 },
             { time: 3.50, lane: 2, hold: 0 },
             { time: 4.00, lane: 1, hold: 0 },
@@ -246,7 +246,7 @@ const SONGS = {
     },
     "Especial - Outra Musica": { 
         src: "Especial.mp3", 
-        chart: [
+        chart: [ 
             { time: 1.00, lane: 0, hold: 0 },
             { time: 1.50, lane: 1, hold: 0 },
             { time: 2.00, lane: 2, hold: 0.5 }, 
@@ -266,7 +266,7 @@ const SONGS = {
 let currentSongData = null; 
 let chart = []; 
 
-// Preenche o <select> com as músicas disponíveis
+// Preencher o <select> com as músicas disponíveis
 Object.keys(SONGS).forEach(songName => {
     const option = document.createElement('option');
     option.value = songName;
