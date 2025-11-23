@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Projeto Muzik</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
 
@@ -31,10 +31,18 @@
         <div class="target" data-dir="ArrowUp">▲</div>
         <div class="target" data-dir="ArrowRight">▶</div>
     </div>
-
-    <button id="startBtn">Iniciar</button>
     
-    <audio id="music" src="Aura.mp3"></audio>
+    <div id="musicSelectionScreen">
+        
+        <label for="musicSelect">Selecione a Música:</label>
+        <select id="musicSelect">
+            </select>
+        
+        <button id="startBtn">Iniciar Jogo</button>
+        
+    </div>
+
+    <audio id="music" src=""></audio>
 
 </div>
 

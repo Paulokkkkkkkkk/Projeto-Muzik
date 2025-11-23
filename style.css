@@ -9,7 +9,6 @@ body {
     align-items: center;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     
-    /* Configuração para o fundo animado (Gradient animado) */
     background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
     background-size: 400% 400%;
     animation: gradientShift 15s ease infinite;
@@ -32,8 +31,8 @@ body {
     width: 700px;
     padding: 30px; 
     border-radius: 25px;
-    background: rgba(15, 20, 50, 0.95); /* Azul escuro semi-transparente */
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), 0 0 10px rgba(70, 70, 255, 0.5); /* Sombra destacada */
+    background: rgba(15, 20, 50, 0.95);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), 0 0 10px rgba(70, 70, 255, 0.5); 
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -47,7 +46,7 @@ body {
 
 .top h1 {
     font-size: 2.2em;
-    color: #4CAF50; /* Verde destaque */
+    color: #4CAF50;
     text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
 }
 
@@ -56,22 +55,28 @@ body {
     font-weight: bold;
 }
 
+/* --- CONTROLE DE VISIBILIDADE INICIAL (CORREÇÃO DE BUGS) --- */
+/* Esconde a área de jogo e os alvos por padrão, mostrando apenas o menu */
+#gameArea, #targets {
+    display: none; 
+}
+
+
 /* --- ÁREA DE JOGO --- */
 #gameArea {
     width: 100%;
-    height: 480px; /* Aumenta a altura para uma pista mais longa */
+    height: 480px; 
     background: rgba(0, 0, 0, 0.3);
     border-radius: 15px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
-    display: flex;
-    overflow: hidden;
+    /* Quando o JS torna visível, ele define display: flex */
 }
 
 .lane {
     width: 25%;
     position: relative;
-    border-right: 1px dashed rgba(255, 255, 255, 0.05); /* Linhas divisórias sutis */
+    border-right: 1px dashed rgba(255, 255, 255, 0.05); 
 }
 .lane:last-child {
     border-right: none;
@@ -83,16 +88,14 @@ body {
     height: 100%;
 }
 
-/* --- SETAS QUE CAEM (.arrow) - AJUSTADAS --- */
+/* --- SETAS QUE CAEM (.arrow) --- */
 .arrow {
     position: absolute;
     top: -80px;
     
-    /* Tamanho igual ao do .target */
     width: 70px; 
     height: 70px;
     
-    /* Centraliza na pista */
     left: 50%;
     transform: translateX(-50%); 
 
@@ -101,7 +104,6 @@ body {
     color: white;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
     
-    /* Estilos de nota */
     border-radius: 15px;
     background: rgba(255, 255, 255, 0.1);
     box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
@@ -114,7 +116,7 @@ body {
 
 /* Cabeça da Long Note */
 .longHead {
-    background: #00bcd4; /* Ciano para destaque */
+    background: #00bcd4;
     color: #000;
     text-shadow: none;
 }
@@ -134,14 +136,15 @@ body {
 #targets {
     width: 100%;
     margin-top: 15px;
-    display: flex;
+    /* Quando o JS torna visível, ele define display: flex */
+    /* display: flex; <--- REMOVIDO PARA SER CONTROLADO PELO JS */
     justify-content: space-around;
 }
 
 .target {
     width: 70px; 
     height: 70px;
-    border: 3px solid #2196F3; /* Azul vibrante */
+    border: 3px solid #2196F3;
     background: rgba(33, 150, 243, 0.1);
     border-radius: 15px;
     display: flex;
@@ -156,8 +159,19 @@ body {
     background: #2196F3;
     color: #000;
     box-shadow: 0 0 15px #2196F3;
-    transform: scale(1.1); /* Efeito de 'pop' */
+    transform: scale(1.1); 
 }
+
+/* Classe para manter o alvo aceso enquanto a tecla é segurada */
+.target.holding {
+    background: #4CAF50;
+    color: #000;
+    border-color: #4CAF50;
+    box-shadow: 0 0 20px #4CAF50; 
+    transform: scale(1.05);
+    transition: background 0s, color 0s, box-shadow 0.1s;
+}
+
 
 /* Feedback de acerto/erro */
 .feedback {
@@ -166,7 +180,7 @@ body {
     font-size: 1.5em;
     animation: feedbackMove 0.6s ease-out forwards;
     pointer-events: none;
-    top: -50px; /* Posição inicial flutuante */
+    top: -50px; 
     left: 50%;
     transform: translateX(-50%);
 }
@@ -177,12 +191,50 @@ body {
 
 @keyframes feedbackMove {
     to { 
-        top: -100px; /* Move para cima */
+        top: -100px;
         opacity: 0; 
     }
 }
 
-/* --- BOTÕES --- */
+/* --- BOTÕES E MENU DE SELEÇÃO --- */
+
+#musicSelectionScreen {
+    width: 80%;
+    max-width: 400px; 
+    margin: 50px auto; 
+    
+    display: flex; 
+    flex-direction: column;
+    align-items: center;
+    padding: 30px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+}
+
+#musicSelectionScreen label {
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    color: #FFEB3B;
+}
+
+#musicSelect {
+    padding: 12px 20px;
+    font-size: 1.1em;
+    border-radius: 8px;
+    border: 2px solid #2196F3;
+    margin-bottom: 25px;
+    background: #1a1e36;
+    color: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+#musicSelect:hover {
+    border-color: #4CAF50;
+}
+
+
 button {
     cursor: pointer;
     background: #4CAF50;
@@ -208,7 +260,7 @@ button:hover {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.9); /* Fundo escuro com mais transparência */
+    background: rgba(0, 0, 0, 0.9);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -245,8 +297,8 @@ button:hover {
 }
 
 #gameOver p {
-    font-size: 1.4em;
-    margin: 12px 0;
+    font-size: 1.2em; 
+    margin: 8px 0;
     color: #B3E5FC;
 }
 
@@ -256,53 +308,14 @@ button:hover {
     padding-left: 5px;
 }
 
-#gameOver #retryBtn {
-    margin-top: 35px;
-    background: #FF9800; /* Laranja para o botão de tentar novamente */
-}
-
-#gameOver #retryBtn:hover {
-    background: #FFA726;
-}
-
-/* style.css: NOVO ESTILO PARA O EFEITO DE HOLD */
-
-/* Classe para manter o alvo aceso enquanto a tecla é segurada */
-.target.holding {
-    /* Mantém o visual de acerto, mas com um brilho persistente */
-    background: #4CAF50; /* Verde, para diferenciar do hit normal */
-    color: #000;
-    border-color: #4CAF50;
-    box-shadow: 0 0 20px #4CAF50; 
-    transform: scale(1.05);
-    transition: background 0s, color 0s, box-shadow 0.1s; /* Transição suave */
-}
-
-/* Garante que o efeito de Hold se sobreponha ao hit normal */
-.target.hit.holding {
-    background: #4CAF50;
-    color: #000;
-    border-color: #4CAF50;
-}
-
-/* style.css: ADICIONE AO FINAL DO SEU ARQUIVO */
-
-/* Estilos para o painel de Game Over */
-#gameOver .panel p {
-    font-size: 1.2em; /* Diminui levemente para dar espaço ao recorde */
-    margin: 8px 0;
-    color: #B3E5FC;
-}
-
-#gameOver .panel p.highScore {
-    margin-top: 15px; /* Espaço extra para o recorde */
+#gameOver p.highScore {
+    margin-top: 15px;
     font-size: 1.5em;
-    color: #FFEB3B; /* Amarelo para destacar o Recorde */
+    color: #FFEB3B;
 }
 
-/* Efeito de destaque para o NOVO Recorde */
-#gameOver .panel p.highScore b.newRecord {
-    color: #FF1744; /* Vermelho/Rosa choque para o novo recorde */
+#gameOver p.highScore b.newRecord {
+    color: #FF1744;
     text-shadow: 0 0 10px #FF1744;
     animation: pulse 1s infinite alternate;
 }
@@ -310,4 +323,21 @@ button:hover {
 @keyframes pulse {
     from { transform: scale(1); opacity: 0.9; }
     to { transform: scale(1.05); opacity: 1; }
+}
+
+#gameOver #retryBtn {
+    margin: 35px 10px 0 10px;
+    background: #FF9800; 
+}
+
+#gameOver #retryBtn:hover {
+    background: #FFA726;
+}
+
+#gameOver #menuBtn {
+    background: #00bcd4; 
+}
+
+#gameOver #menuBtn:hover {
+    background: #26c6da;
 }
