@@ -259,6 +259,15 @@ const SONGS = {
             { time: 7.50, lane: 1, hold: 0 },
             { time: 7.75, lane: 2, hold: 0 },
             { time: 8.00, lane: 3, hold: 0 },
+            { time: 9.00, lane: 0, hold: 0 },
+            { time: 11.00, lane: 1, hold: 0 },
+            { time: 13.00, lane: 2, hold: 0 },
+            { time: 13.80, lane: 3, hold: 0 },
+            { time: 14.50, lane: 0, hold: 0 },
+            { time: 15.60, lane: 2, hold: 0 },
+            { time: 16.00, lane: 3, hold: 0 },
+            { time: 17.00, lane: 0, hold: 0 },
+            { time: 17.80, lane: 3, hold: 0 },
         ]
     }
 };
